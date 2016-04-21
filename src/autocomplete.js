@@ -36,7 +36,8 @@ angular.module('google.places', [])
                     model: '=ngModel',
                     options: '=?',
                     forceSelection: '=?',
-                    customPlaces: '=?'
+                    customPlaces: '=?',
+                    usePredictionText: '=?'
                 },
                 controller: ['$scope', function ($scope) {}],
                 link: function ($scope, element, attrs, controller) {
@@ -155,8 +156,10 @@ angular.module('google.places', [])
                         prediction = $scope.predictions[$scope.selected];
                         if (!prediction) return;
 
+                        var predictionDescription = prediction.description;
                         if (prediction.is_custom) {
                             $scope.$apply(function () {
+                                prediction.place.predictionDescription = predictionDescription;
                                 $scope.model = prediction.place;
                                 $scope.$emit('g-places-autocomplete:select', prediction.place);
                                 $timeout(function () {
@@ -167,6 +170,7 @@ angular.module('google.places', [])
                             placesService.getDetails({ placeId: prediction.place_id }, function (place, status) {
                                 if (status == google.maps.places.PlacesServiceStatus.OK) {
                                     $scope.$apply(function () {
+                                        place.predictionDescription = predictionDescription;
                                         $scope.model = place;
                                         $scope.$emit('g-places-autocomplete:select', place);
                                         $timeout(function () {
@@ -222,7 +226,11 @@ angular.module('google.places', [])
                         if (isString(modelValue)) {
                             viewValue = modelValue;
                         } else if (isObject(modelValue)) {
-                            viewValue = modelValue.formatted_address;
+                            if ($scope.usePredictionText) {
+                                viewValue = modelValue.predictionDescription || modelValue.formatted_address;
+                            } else {
+                                viewValue = modelValue.formatted_address;
+                            }
                         }
 
                         return viewValue;
